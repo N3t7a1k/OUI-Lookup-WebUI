@@ -13,24 +13,13 @@ export async function middleware(request: NextRequest) {
   ) {
     const pathSegments = pathname.split('/').filter(segment => segment);
     const query = pathSegments[0];
-    const apiUrl = new URL(`${process.env.NEXT_PUBLIC_API_BASE_URL}/${query}`);
+    const apiUrl = new URL(`/api/search?query=${query}`, request.url);
 
-    const page = searchParams.get('page');
-    const limit = searchParams.get('limit');
-    if (page) {
-      apiUrl.searchParams.append('page', page);
-    }
-    if (limit) {
-      apiUrl.searchParams.append('limit', limit);
-    }
-
-    const response = await fetch(apiUrl.toString());
-    const data = await response.json();
-
-    return new NextResponse(JSON.stringify(data, null, 2), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
+     searchParams.forEach((value, key) => {
+      apiUrl.searchParams.append(key, value);
     });
+
+    return await fetch(apiUrl);
   }
 
   return NextResponse.next();

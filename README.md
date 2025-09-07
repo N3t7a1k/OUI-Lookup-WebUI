@@ -4,12 +4,9 @@ This web service allows users to easily search and retrieve OUI (Organizationall
 ![Home](img/1.png)
 ![Search](img/2.png)
 
-## Environment Configurations
-The webui directory contains its own .env file with the following configurations:
+## Environment Variable
+You MUST set base URL of the API before running the server.
 ```
-NEXT_PUBLIC_BASE_URL=https://oui.n3t7a1k.io
-NEXT_PUBLIC_API_BASE_URL=https://ouiapi.n3t7a1k.io
-NEXT_PUBLIC_BASE_URL: This is the base URL for the WebUI, which is used throughout the frontend for routing and resource loading.
-NEXT_PUBLIC_API_BASE_URL: This is the base URL for the API server, which is used to make API requests from the frontend.
+API_BASE_URL=https://ouiapi.n3t7a1k.io
 ```
 

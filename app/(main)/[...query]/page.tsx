@@ -69,7 +69,7 @@ export default function Query({ params }: Params) {
     const fetchData = async () => {
       setLoading(true);
       setError(null);
-      const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/${query}?page=${currentPage}&limit=${itemsPerPage}`;
+      const apiUrl = `/api/search?query=${query}&page=${currentPage}&limit=${itemsPerPage}`;
       try {
         const response = await fetch(apiUrl);
         if (!response.ok) {
