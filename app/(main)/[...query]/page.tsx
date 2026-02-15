@@ -1,49 +1,67 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react';
 import { Footer, MyAppBar } from "@/components";
-import { List, ListItem, ListItemText, Pagination, Skeleton, Alert, Box, Container, Grid, Typography, Link, useMediaQuery } from '@mui/material';
+import {
+  List, ListItem, ListItemText, Pagination, Skeleton, Alert, Box,
+  Container, Stack, Typography, Link, useMediaQuery, TextField, InputAdornment, IconButton
+} from '@mui/material';
+import SearchIcon from '@mui/icons-material/Search';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTheme, styled } from '@mui/material';
 
-interface Params {
-  params: {
+interface PageProps {
+  params: Promise<{
     query: string[];
-  };
+  }>;
+}
+
+interface OUIItem {
+  Registry?: string;
+  Assignment: string;
+  "Organization Name": string;
+  "Organization Address"?: string;
 }
 
 interface ApiResponse {
-  count: number;
-  total: number;
-  data?: {
-    Registry: string;
-    Assignment: string;
-    "Organization Name": string;
-    "Organization Address": string;
-  }[];
-  info?: string;
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    type: string;
+  };
+  data: OUIItem[];
 }
 
 const StyledLink = styled(Link)(({ theme }) => ({
   color: theme.palette.text.primary,
   textDecoration: 'none',
+  '&:hover': {
+    textDecoration: 'underline',
+  },
 }));
 
 function formatMAC(assignment: string): string {
-  const baseMac = assignment.toUpperCase();
-  const padLength = 12 - baseMac.length;
-  return (baseMac + '0'.repeat(padLength)).match(/.{1,2}/g)?.join(':')!;
+  if (!assignment) return '';
+  const cleanMac = assignment.toUpperCase().replace(/[^0-9A-F]/g, '');
+  const paddedMac = cleanMac.padEnd(12, '0');
+  return paddedMac.match(/.{1,2}/g)?.join(':') || paddedMac;
 }
 
-export default function Query({ params }: Params) {
+export default function QueryPage({ params }: PageProps) {
+  const resolvedParams = use(params);
+  const initialQuery = decodeURIComponent(resolvedParams.query[0]);
+
   const theme = useTheme();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const query = params.query[0];
+
+  const [inputQuery, setInputQuery] = useState(initialQuery);
   const [data, setData] = useState<ApiResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [currentPage, setCurrentPage] = useState(Number(searchParams.get('page')) || 1);
+
+  const currentPage = Number(searchParams.get('page')) || 1;
   const itemsPerPage = 10;
   const isMobile = useMediaQuery("(max-width: 767px)");
 
@@ -53,6 +71,7 @@ export default function Query({ params }: Params) {
     textOverflow: 'ellipsis',
     display: 'inline-block',
     maxWidth: isMobile ? '100%' : 'calc(100% - 100px)',
+    fontWeight: 500,
     color: theme.palette.text.primary,
   }));
 
@@ -62,14 +81,23 @@ export default function Query({ params }: Params) {
     textOverflow: 'ellipsis',
     display: 'inline-block',
     maxWidth: isMobile ? '100%' : 'calc(100% - 100px)',
-    color: theme.palette.text.primary,
+    color: theme.palette.text.secondary,
   }));
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (inputQuery.trim()) {
+      router.push(`/${encodeURIComponent(inputQuery.trim())}`);
+    }
+  };
 
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       setError(null);
-      const apiUrl = `/api/search?query=${query}&page=${currentPage}&limit=${itemsPerPage}`;
+
+      const apiUrl = `/api/search?query=${encodeURIComponent(initialQuery)}&page=${currentPage}&limit=${itemsPerPage}`;
+
       try {
         const response = await fetch(apiUrl);
         if (!response.ok) {
@@ -85,58 +113,73 @@ export default function Query({ params }: Params) {
         }
       }
       setLoading(false);
-      document.title = `OUILookup - Search result for "${query}", page ${currentPage}`
+      document.title = `OUILookup - "${initialQuery}"`;
     };
+
     fetchData();
-  }, [query, currentPage]);
+    setInputQuery(initialQuery);
+  }, [initialQuery, currentPage]);
 
   const handlePageChange = (_: React.ChangeEvent<unknown>, page: number) => {
-    setCurrentPage(page);
-    router.push(`?page=${page}`);
+    router.push(`/${initialQuery}?page=${page}`);
   };
 
   return (
     <>
-      <title>OUI Lookup</title>
       <MyAppBar />
       <Container
         maxWidth="md"
         sx={{
           display: 'flex',
           flexDirection: 'column',
-          minHeight: 'calc(100svh - 100px)',
-          width: '100%',
-          justifyContent: 'center',
-          color: theme.palette.text.primary,
+          minHeight: 'calc(100vh - 150px)',
+          py: 4,
           alignItems: 'center',
         }}
       >
-        <Box
-          sx={{
-            my: 4,
-            flexGrow: 1,
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
-            alignItems: 'center',
-            width: '100%',
-          }}
-        >
+        <Box component="form" onSubmit={handleSearch} sx={{ mb: 4, width: '100%' }}>
+          <TextField
+            fullWidth
+            variant="outlined"
+            placeholder="Search MAC Address or Vendor"
+            value={inputQuery}
+            onChange={(e) => setInputQuery(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon color="action" />
+                </InputAdornment>
+              ),
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton type="submit" edge="end" color="primary">
+                    <SearchIcon />
+                  </IconButton>
+                </InputAdornment>
+              )
+            }}
+            sx={{ bgcolor: 'background.paper', borderRadius: 1 }}
+          />
+        </Box>
+
+        <Box sx={{ flexGrow: 1, width: '100%' }}>
           {loading ? (
-            <Grid container spacing={2} justifyContent="center">
+            <Stack spacing={2}>
               {Array.from(new Array(10)).map((_, index) => (
-                <Grid item xs={12} key={index}>
-                  <Skeleton variant="rectangular" width="100%" height={30} />
-                </Grid>
+                <Skeleton key={index} variant="rounded" width="100%" height={50} />
               ))}
-            </Grid>
+            </Stack>
           ) : error ? (
             <Alert severity="error">{error}</Alert>
-          ) : data && data.count > 0 ? (
+          ) : data && data.meta && data.meta.total > 0 ? (
             <>
-              <List sx={{ width: '100%' }}>
-                {data.data?.map((item, index) => (
-                  <ListItem key={index}>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1, textAlign: 'right' }}>
+                Found {data.meta.total} results
+              </Typography>
+
+              <List sx={{ width: '100%', bgcolor: 'background.paper', borderRadius: 1 }}>
+                {data.data.map((item, index) => (
+                  <ListItem key={index} divider={index < data.data.length - 1}>
                     <ListItemText
                       primary={
                         <ListItemTextPrimary>
@@ -144,17 +187,21 @@ export default function Query({ params }: Params) {
                         </ListItemTextPrimary>
                       }
                       secondary={
-                        <ListItemTextSecondary>
-                          { isMobile ?
-                            formatMAC(item["Assignment"]) :
+                        isMobile ? (
+                          <ListItemTextSecondary>
+                            {formatMAC(item["Assignment"])}
+                          </ListItemTextSecondary>
+                        ) : (
+                          <ListItemTextSecondary>
                             <StyledLink
-                              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item["Organization Address"])}`}
+                              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item["Organization Address"] || "")}`}
                               target="_blank"
-                              rel="noopener noreferrer">
+                              rel="noopener noreferrer"
+                            >
                               {item["Organization Address"]}
                             </StyledLink>
-                          }
-                        </ListItemTextSecondary>
+                          </ListItemTextSecondary>
+                        )
                       }
                     />
                     {(!isMobile) && (
@@ -167,15 +214,18 @@ export default function Query({ params }: Params) {
                   </ListItem>
                 ))}
               </List>
-              <Grid container justifyContent="center">
+
+              <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
                 <Pagination
-                  count={Math.ceil(data.total / itemsPerPage)}
+                  count={Math.ceil(data.meta.total / itemsPerPage)}
                   page={currentPage}
                   onChange={handlePageChange}
                   color="primary"
                   size={isMobile ? "small" : "large"}
+                  showFirstButton
+                  showLastButton
                 />
-              </Grid>
+              </Box>
             </>
           ) : (
             <Box
@@ -183,11 +233,14 @@ export default function Query({ params }: Params) {
                 display: 'flex',
                 justifyContent: 'center',
                 alignItems: 'center',
-                height: '100%',
+                height: '200px',
+                flexDirection: 'column',
+                opacity: 0.7
               }}
             >
-              <Typography variant="h6">
-                {data?.info || "No data available"}
+              <SearchIcon sx={{ fontSize: 60, mb: 2, color: 'text.secondary' }} />
+              <Typography variant="h6" color="text.secondary">
+                No results found for "{initialQuery}"
               </Typography>
             </Box>
           )}

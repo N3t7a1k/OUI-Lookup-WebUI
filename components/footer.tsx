@@ -16,7 +16,7 @@ export default function Footer({ style }: { style?: React.CSSProperties }) {
         component="div"
         sx={{ textAlign: 'center' }}
       >
-        © 2024.{' '}
+        © 2024-2026.{' '}
         <Link
           href="https://github.com/N3t7a1k/OUILookup"
           underline="none"
