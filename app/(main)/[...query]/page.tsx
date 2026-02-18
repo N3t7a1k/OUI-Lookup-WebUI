@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, use } from 'react';
-import { Footer, MyAppBar } from "@/components";
+import { Footer, MyAppBar, SearchBar } from "@/components";
 import {
   List, ListItem, ListItemText, Pagination, Skeleton, Alert, Box,
   Container, Stack, Typography, Link, useMediaQuery, TextField, InputAdornment, IconButton
@@ -56,7 +56,6 @@ export default function QueryPage({ params }: PageProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const [inputQuery, setInputQuery] = useState(initialQuery);
   const [data, setData] = useState<ApiResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -84,12 +83,7 @@ export default function QueryPage({ params }: PageProps) {
     color: theme.palette.text.secondary,
   }));
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (inputQuery.trim()) {
-      router.push(`/${encodeURIComponent(inputQuery.trim())}`);
-    }
-  };
+
 
   useEffect(() => {
     const fetchData = async () => {
@@ -117,7 +111,6 @@ export default function QueryPage({ params }: PageProps) {
     };
 
     fetchData();
-    setInputQuery(initialQuery);
   }, [initialQuery, currentPage]);
 
   const handlePageChange = (_: React.ChangeEvent<unknown>, page: number) => {
@@ -128,7 +121,7 @@ export default function QueryPage({ params }: PageProps) {
     <>
       <MyAppBar />
       <Container
-        maxWidth="md"
+        maxWidth="lg"
         sx={{
           display: 'flex',
           flexDirection: 'column',
@@ -137,30 +130,7 @@ export default function QueryPage({ params }: PageProps) {
           alignItems: 'center',
         }}
       >
-        <Box component="form" onSubmit={handleSearch} sx={{ mb: 4, width: '100%' }}>
-          <TextField
-            fullWidth
-            variant="outlined"
-            placeholder="Search MAC Address or Vendor"
-            value={inputQuery}
-            onChange={(e) => setInputQuery(e.target.value)}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon color="action" />
-                </InputAdornment>
-              ),
-              endAdornment: (
-                <InputAdornment position="end">
-                  <IconButton type="submit" edge="end" color="primary">
-                    <SearchIcon />
-                  </IconButton>
-                </InputAdornment>
-              )
-            }}
-            sx={{ bgcolor: 'background.paper', borderRadius: 1 }}
-          />
-        </Box>
+        <SearchBar initialQuery={initialQuery} />
 
         <Box sx={{ flexGrow: 1, width: '100%' }}>
           {loading ? (

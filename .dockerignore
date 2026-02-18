@@ -1,0 +1,16 @@
+# NodeJS modules
+node_module
+
+# Environment variables
+.env
+.env.local
+.env.*
+
+# Git
+.git
+.gitignore
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
